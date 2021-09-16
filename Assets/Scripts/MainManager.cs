@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,19 +10,30 @@ public class MainManager : MonoBehaviour
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
+    public int topPoints;
+    public string topPlayer;
 
     public Text ScoreText;
     public GameObject GameOverText;
+
+    public Text history;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
 
+    private MenuManager menuManagaer;
+
     
     // Start is called before the first frame update
     void Start()
     {
+        LoadPlay();
+        menuManagaer = GameObject.Find("MenuManager").GetComponent<MenuManager>();
+
+        history.text = "Best Score:" + topPoints + " Player Name: " + topPlayer;
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -70,7 +82,43 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if (m_Points > topPoints)
+        {
+            SavePlay();
+        }
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public int b_points;
+        public string b_player;
+    }
+
+    public void SavePlay()
+    {
+        SaveData data = new SaveData();
+        data.b_points = m_Points;
+        data.b_player = menuManagaer.playerName;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadPlay()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            history.text = "Best Score: " + data.b_points + "Player Name: " + data.b_player;
+            topPoints = data.b_points;
+            topPlayer = data.b_player;
+        }
     }
 }
